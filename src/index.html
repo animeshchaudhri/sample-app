@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EvalKit — Live Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #080b12;
+  --surf:     #0e1220;
+  --surf2:    #141828;
+  --surf3:    #1a1f30;
+  --border:   #1e2438;
+  --border2:  #242b40;
+  --text:     #c8d0ee;
+  --muted:    #5a6280;
+  --dim:      #353d58;
+  --accent:   #6366f1;
+  --abright:  #818cf8;
+  --aglow:    rgba(99,102,241,.12);
+  --aglow2:   rgba(99,102,241,.06);
+  --green:    #34d399;
+  --red:      #f87171;
+  --yellow:   #fbbf24;
+  --purple:   #a78bfa;
+  --cyan:     #22d3ee;
+  --orange:   #fb923c;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; background: var(--bg); }
+body {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  color: var(--text);
+  display: grid;
+  grid-template-rows: 50px 1fr;
+  grid-template-columns: 260px 1fr;
+  height: 100vh;
+}
+
+/* ── Header ── */
+header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  background: var(--surf);
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+  z-index: 10;
+}
+.logo {
+  display: flex; align-items: center; gap: 8px;
+}
+.logo-mark {
+  width: 26px; height: 26px;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: #fff;
+  box-shadow: 0 0 16px rgba(99,102,241,.5);
+}
+.logo-text { font-size: 15px; font-weight: 600; color: #e0e4ff; letter-spacing: -.3px; }
+.logo-badge {
+  padding: 2px 7px;
+  background: var(--aglow);
+  border: 1px solid rgba(99,102,241,.3);
+  border-radius: 10px;
+  font-size: 10px;
+  color: var(--abright);
+  font-weight: 500;
+  letter-spacing: .5px;
+}
+header .spacer { flex: 1; }
+.header-stat {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 12px;
+  background: var(--surf2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 11px; color: var(--muted);
+}
+.stat-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); }
+.stat-dot.red { background: var(--red); box-shadow: 0 0 6px var(--red); }
+
+/* ── Sidebar ── */
+aside {
+  background: var(--surf);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.sidebar-section { padding: 14px 14px 6px; }
+.sidebar-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  color: var(--dim);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.scenario-list { display: flex; flex-direction: column; gap: 2px; }
+.scenario-btn {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 11px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all .15s;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--muted);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  text-align: left;
+  width: 100%;
+}
+.scenario-btn:hover { background: var(--aglow2); color: var(--text); }
+.scenario-btn.active {
+  background: var(--aglow);
+  border-color: rgba(99,102,241,.3);
+  color: #e0e4ff;
+}
+.sc-icon { font-size: 15px; width: 20px; text-align: center; flex-shrink: 0; }
+.sc-info { flex: 1; min-width: 0; }
+.sc-name { font-weight: 500; font-size: 13px; }
+.sc-desc { font-size: 11px; color: var(--dim); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scenario-btn.active .sc-desc { color: var(--muted); }
+
+.sidebar-divider { height: 1px; background: var(--border); margin: 10px 14px; }
+
+.config-section { padding: 0 14px 14px; flex-shrink: 0; }
+.config-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+.config-label { font-size: 11px; color: var(--muted); font-weight: 500; }
+.config-sel, .config-in {
+  background: var(--surf2);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color .15s;
+  width: 100%;
+}
+.config-sel { appearance: none; cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath fill='%235a6280' d='M0 0l4 5 4-5z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; background-size: 8px; }
+.config-sel:focus, .config-in:focus { border-color: var(--accent); }
+
+.run-btn {
+  width: 100%;
+  padding: 10px;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+  box-shadow: 0 4px 20px rgba(99,102,241,.3);
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+}
+.run-btn:hover:not(:disabled) { box-shadow: 0 4px 28px rgba(99,102,241,.5); transform: translateY(-1px); }
+.run-btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+
+.side-prompt-wrap { padding: 0 14px 14px; flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.prompt-ta {
+  flex: 1;
+  background: var(--surf2);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 12px;
+  line-height: 1.6;
+  padding: 10px;
+  border-radius: 6px;
+  outline: none;
+  resize: none;
+  transition: border-color .15s;
+  min-height: 80px;
+  max-height: 120px;
+}
+.prompt-ta:focus { border-color: var(--accent); }
+.prompt-ta::placeholder { color: var(--dim); }
+
+/* ── Main area ── */
+main {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* ── Welcome screen ── */
+#welcome {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  padding: 40px;
+  text-align: center;
+}
+.welcome-hero { font-size: 42px; font-weight: 700; letter-spacing: -1.5px; color: #e8ecff; line-height: 1.1; }
+.welcome-hero span { background: linear-gradient(135deg, var(--accent), var(--purple), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.welcome-sub { font-size: 15px; color: var(--muted); max-width: 480px; line-height: 1.7; }
+.welcome-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; max-width: 680px; width: 100%; }
+.welcome-card {
+  padding: 20px 18px;
+  background: var(--surf);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  text-align: left;
+  cursor: pointer;
+  transition: all .2s;
+}
+.welcome-card:hover { border-color: rgba(99,102,241,.4); background: var(--surf2); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.3); }
+.wcard-icon { font-size: 22px; margin-bottom: 10px; }
+.wcard-title { font-size: 14px; font-weight: 600; color: #e0e4ff; margin-bottom: 5px; }
+.wcard-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+/* ── Output area ── */
+#output-area {
+  display: none;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── Tabs ── */
+.tab-bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 16px 0;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--surf);
+}
+.tab-btn {
+  padding: 7px 14px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all .15s;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--abright); border-bottom-color: var(--accent); }
+
+/* ── Response panel ── */
+#tab-response {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  padding: 16px;
+  gap: 12px;
+}
+
+/* Comparison grid */
+.compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  flex: 1;
+  overflow: hidden;
+}
+.compare-card {
+  background: var(--surf);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.compare-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px;
+  flex-shrink: 0;
+}
+.compare-model { font-size: 12px; font-weight: 600; color: #e0e4ff; }
+.compare-provider { font-size: 10px; color: var(--muted); }
+.compare-body { flex: 1; overflow-y: auto; padding: 14px; }
+.compare-text { font-size: 13px; line-height: 1.7; color: var(--text); white-space: pre-wrap; }
+.compare-footer {
+  padding: 8px 14px;
+  border-top: 1px solid var(--border);
+  display: flex; gap: 14px;
+  flex-shrink: 0;
+  background: var(--surf2);
+}
+.compare-stat { font-size: 11px; color: var(--muted); }
+.compare-stat b { color: var(--text); font-weight: 500; }
+
+/* Single response */
+.response-card {
+  background: var(--surf);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  flex: 1;
+  overflow-y: auto;
+}
+.response-text { font-size: 14px; line-height: 1.8; color: var(--text); white-space: pre-wrap; }
+.response-meta { display: flex; gap: 14px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+.rmeta { font-size: 11px; color: var(--muted); }
+.rmeta b { color: var(--text); font-weight: 500; font-family: 'JetBrains Mono', monospace; }
+
+/* Loading state */
+.loading-state {
+  display: flex; align-items: center; justify-content: center;
+  height: 100%; gap: 10px; color: var(--muted); font-size: 13px;
+}
+.spin { display: inline-block; animation: spinr .7s linear infinite; font-size: 18px; }
+@keyframes spinr { to { transform: rotate(360deg); } }
+
+/* ── Agent trace panel ── */
+#tab-trace {
+  display: none;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  padding: 16px;
+  gap: 10px;
+}
+
+.trace-stats {
+  display: flex; gap: 10px; flex-shrink: 0;
+}
+.tstat {
+  flex: 1;
+  background: var(--surf);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+.tstat-val { font-size: 20px; font-weight: 700; color: #e0e4ff; font-variant-numeric: tabular-nums; }
+.tstat-lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+.steps-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.step-card {
+  background: var(--surf);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  animation: slidein .2s ease;
+}
+@keyframes slidein { from { opacity:0; transform:translateY(8px); } to { opacity:1; } }
+
+.step-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 13px;
+  cursor: pointer;
+  user-select: none;
+}
+.step-header:hover { background: var(--surf2); }
+.step-num {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--surf3);
+  border: 1px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  flex-shrink: 0;
+  font-family: 'JetBrains Mono', monospace;
+}
+.step-num.llm { background: var(--aglow); border-color: rgba(99,102,241,.4); color: var(--abright); }
+.step-num.tool { background: rgba(251,191,36,.08); border-color: rgba(251,191,36,.3); color: var(--yellow); }
+.step-num.done { background: rgba(52,211,153,.08); border-color: rgba(52,211,153,.3); color: var(--green); }
+
+.step-info { flex: 1; min-width: 0; }
+.step-title { font-size: 13px; font-weight: 500; color: #d8dcf8; }
+.step-sub { font-size: 11px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.step-badges { display: flex; gap: 6px; align-items: center; }
+.badge {
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: .3px;
+}
+.badge-llm { background: var(--aglow); color: var(--abright); border: 1px solid rgba(99,102,241,.3); }
+.badge-tool { background: rgba(251,191,36,.1); color: var(--yellow); border: 1px solid rgba(251,191,36,.25); }
+.badge-done { background: rgba(52,211,153,.1); color: var(--green); border: 1px solid rgba(52,211,153,.25); }
+.badge-err  { background: rgba(248,113,113,.1); color: var(--red); border: 1px solid rgba(248,113,113,.25); }
+.badge-ms   { font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+
+.step-chevron { color: var(--dim); font-size: 10px; flex-shrink: 0; transition: transform .15s; }
+.step-card.open .step-chevron { transform: rotate(90deg); }
+
+.step-body {
+  display: none;
+  padding: 0 13px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--surf2);
+}
+.step-card.open .step-body { display: block; }
+.step-body-inner { padding-top: 10px; }
+.step-code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.step-section-lbl {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin: 8px 0 4px;
+}
+
+/* ── Error state ── */
+.error-block {
+  background: rgba(248,113,113,.07);
+  border: 1px solid rgba(248,113,113,.25);
+  border-radius: 8px;
+  padding: 14px;
+  color: var(--red);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+/* Spinner in step */
+.thinking-step { display: flex; align-items: center; gap: 10px; padding: 12px 13px; color: var(--muted); font-size: 12px; }
+.pulse-dots { display: flex; gap: 4px; }
+.pulse-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); animation: pulse 1.2s ease infinite; }
+.pulse-dot:nth-child(2) { animation-delay: .2s; }
+.pulse-dot:nth-child(3) { animation-delay: .4s; }
+@keyframes pulse { 0%,100% { opacity:.2; transform: scale(.8); } 50% { opacity:1; transform: scale(1); } }
+
+.trace-id-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px;
+  background: var(--surf2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.trace-id-lbl { color: var(--muted); }
+.trace-id-val { font-family: 'JetBrains Mono', monospace; color: var(--green); }
+.copy-btn {
+  padding: 2px 8px; background: var(--surf3); border: 1px solid var(--border2);
+  border-radius: 4px; font-size: 10px; color: var(--muted); cursor: pointer; transition: all .13s;
+  font-family: 'Space Grotesk', sans-serif;
+}
+.copy-btn:hover { border-color: var(--accent); color: var(--abright); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">E</div>
+    <span class="logo-text">EvalKit</span>
+    <span class="logo-badge">LIVE DEMO</span>
+  </div>
+  <div class="spacer"></div>
+  <div class="header-stat" id="trace-status">
+    <div class="stat-dot" id="status-dot"></div>
+    <span id="status-text">Ready</span>
+  </div>
+</header>
+
+<!-- ── Sidebar ── -->
+<aside>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Scenarios</div>
+    <div class="scenario-list">
+      <button class="scenario-btn active" data-scenario="chat" onclick="selectScenario(this)">
+        <span class="sc-icon">💬</span>
+        <div class="sc-info">
+          <div class="sc-name">Chat</div>
+          <div class="sc-desc">Simple LLM conversation</div>
+        </div>
+      </button>
+      <button class="scenario-btn" data-scenario="agent-general" onclick="selectScenario(this)">
+        <span class="sc-icon">🤖</span>
+        <div class="sc-info">
+          <div class="sc-name">General Agent</div>
+          <div class="sc-desc">Multi-step tool reasoning</div>
+        </div>
+      </button>
+      <button class="scenario-btn" data-scenario="agent-research" onclick="selectScenario(this)">
+        <span class="sc-icon">🔍</span>
+        <div class="sc-info">
+          <div class="sc-name">Research Agent</div>
+          <div class="sc-desc">Web search + synthesis</div>
+        </div>
+      </button>
+      <button class="scenario-btn" data-scenario="agent-finance" onclick="selectScenario(this)">
+        <span class="sc-icon">📈</span>
+        <div class="sc-info">
+          <div class="sc-name">Finance Agent</div>
+          <div class="sc-desc">Stock + news + calc</div>
+        </div>
+      </button>
+      <button class="scenario-btn" data-scenario="agent-data" onclick="selectScenario(this)">
+        <span class="sc-icon">📊</span>
+        <div class="sc-info">
+          <div class="sc-name">Data Analyst</div>
+          <div class="sc-desc">Multi-tool data pipeline</div>
+        </div>
+      </button>
+      <button class="scenario-btn" data-scenario="compare" onclick="selectScenario(this)">
+        <span class="sc-icon">⚡</span>
+        <div class="sc-info">
+          <div class="sc-name">Model Battle</div>
+          <div class="sc-desc">OpenAI vs Anthropic</div>
+        </div>
+      </button>
+    </div>
+  </div>
+
+  <div class="sidebar-divider"></div>
+
+  <div class="config-section">
+    <div id="model-config">
+      <div class="config-row">
+        <span class="config-label">Model</span>
+        <select class="config-sel" id="model-sel">
+          <option value="gpt-4o-mini">gpt-4o-mini</option>
+          <option value="gpt-4o">gpt-4o</option>
+          <option value="claude-3-5-haiku-20241022">claude-3.5-haiku</option>
+          <option value="claude-3-5-sonnet-20241022">claude-3.5-sonnet</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="side-prompt-wrap">
+    <span class="config-label" style="margin-bottom:6px;display:block;">Prompt</span>
+    <textarea class="prompt-ta" id="prompt-ta" placeholder="Type your message…"></textarea>
+  </div>
+
+  <div class="config-section">
+    <button class="run-btn" id="run-btn" onclick="run()">
+      <span id="run-icon">▶</span>
+      <span id="run-label">Run</span>
+    </button>
+  </div>
+</aside>
+
+<!-- ── Main ── -->
+<main>
+
+  <!-- Welcome -->
+  <div id="welcome">
+    <div>
+      <div class="welcome-hero">LLM Observability<br><span>that actually works.</span></div>
+      <div class="welcome-sub" style="margin-top:14px;">Every LLM call, tool invocation, and agent step traced end-to-end. Pick a scenario and see EvalKit in action.</div>
+    </div>
+    <div class="welcome-cards">
+      <div class="welcome-card" onclick="quickStart('agent-general')">
+        <div class="wcard-icon">🤖</div>
+        <div class="wcard-title">Agent with Tools</div>
+        <div class="wcard-desc">Watch an LLM loop through tool calls to answer a complex question</div>
+      </div>
+      <div class="welcome-card" onclick="quickStart('compare')">
+        <div class="wcard-icon">⚡</div>
+        <div class="wcard-title">Model Battle</div>
+        <div class="wcard-desc">Same prompt, two providers. Compare latency, tokens, and quality side-by-side</div>
+      </div>
+      <div class="welcome-card" onclick="quickStart('agent-finance')">
+        <div class="wcard-icon">📈</div>
+        <div class="wcard-title">Finance Agent</div>
+        <div class="wcard-desc">Stock lookup + news + calculation in one agentic trace</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Output area -->
+  <div id="output-area">
+    <!-- Tabs -->
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('response')">Response</button>
+      <button class="tab-btn" id="tab-trace-btn" onclick="switchTab('trace')" style="display:none">Agent Trace</button>
+    </div>
+
+    <!-- Response tab -->
+    <div id="tab-response" style="display:flex;">
+      <div class="loading-state" id="resp-loading">
+        <span class="spin">◌</span> Running…
+      </div>
+    </div>
+
+    <!-- Trace tab -->
+    <div id="tab-trace">
+    </div>
+  </div>
+
+</main>
+
+<script>
+'use strict';
+
+const SCENARIOS = {
+  'chat': {
+    label: 'Chat',
+    prompt: 'Explain transformer attention in 2 sentences.',
+    endpoint: '/demo/chat',
+    showTrace: false,
+  },
+  'agent-general': {
+    label: 'General Agent',
+    prompt: "What's the weather in Tokyo and calculate the wind chill if it's 15°C with 20 km/h wind?",
+    endpoint: '/demo/agent',
+    agentType: 'general',
+    showTrace: true,
+  },
+  'agent-research': {
+    label: 'Research Agent',
+    prompt: "Search for recent news about quantum computing and give me a 3-point summary.",
+    endpoint: '/demo/agent',
+    agentType: 'research',
+    showTrace: true,
+  },
+  'agent-finance': {
+    label: 'Finance Agent',
+    prompt: "Get the stock price of NVDA and TSLA, then tell me which had better performance and calculate the ratio.",
+    endpoint: '/demo/agent',
+    agentType: 'finance',
+    showTrace: true,
+  },
+  'agent-data': {
+    label: 'Data Analyst',
+    prompt: "Search for GDP data for USA, translate 'gross domestic product' to French, and calculate 5% of US GDP (assume 25 trillion).",
+    endpoint: '/demo/agent',
+    agentType: 'data',
+    showTrace: true,
+  },
+  'compare': {
+    label: 'Model Battle',
+    prompt: "Write a haiku about artificial intelligence observability.",
+    endpoint: '/demo/compare',
+    showTrace: false,
+  },
+};
+
+const PROMPTS = {
+  'chat': 'Explain transformer attention in 2 sentences.',
+  'agent-general': "What's the weather in Tokyo and calculate the wind chill if it's 15°C with 20 km/h wind?",
+  'agent-research': "Search for recent news about quantum computing and give me a 3-point summary.",
+  'agent-finance': "Get the stock price of NVDA and TSLA, then tell me which had better performance.",
+  'agent-data': "Search for GDP data for USA and calculate 5% of 25 trillion.",
+  'compare': "Write a haiku about AI observability.",
+};
+
+let currentScenario = 'chat';
+let busy = false;
+
+function selectScenario(btn) {
+  document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentScenario = btn.dataset.scenario;
+
+  const sc = SCENARIOS[currentScenario];
+
+  // Show/hide model picker for compare
+  const modelCfg = document.getElementById('model-config');
+  modelCfg.style.display = currentScenario === 'compare' ? 'none' : 'block';
+
+  // Set prompt suggestion
+  const ta = document.getElementById('prompt-ta');
+  ta.value = PROMPTS[currentScenario] || '';
+}
+
+function quickStart(scenario) {
+  const btn = document.querySelector(`[data-scenario="${scenario}"]`);
+  if (btn) btn.click();
+  run();
+}
+
+function setBusy(on) {
+  busy = on;
+  const runBtn = document.getElementById('run-btn');
+  const icon = document.getElementById('run-icon');
+  const label = document.getElementById('run-label');
+  runBtn.disabled = on;
+  icon.textContent = on ? '◌' : '▶';
+  if (on) icon.classList.add('spin'); else icon.classList.remove('spin');
+  label.textContent = on ? 'Running…' : 'Run';
+
+  const dot = document.getElementById('status-dot');
+  const txt = document.getElementById('status-text');
+  if (on) {
+    dot.classList.add('red');
+    txt.textContent = 'Processing';
+  } else {
+    dot.classList.remove('red');
+    txt.textContent = 'Ready';
+  }
+}
+
+function showOutput() {
+  document.getElementById('welcome').style.display = 'none';
+  document.getElementById('output-area').style.display = 'flex';
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('tab-response').style.display = tab === 'response' ? 'flex' : 'none';
+  document.getElementById('tab-trace').style.display = tab === 'trace' ? 'flex' : 'none';
+}
+
+function esc(s) {
+  return String(s || '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function run() {
+  if (busy) return;
+
+  const prompt = document.getElementById('prompt-ta').value.trim();
+  if (!prompt) { document.getElementById('prompt-ta').focus(); return; }
+
+  const sc = SCENARIOS[currentScenario];
+  const model = document.getElementById('model-sel').value;
+
+  setBusy(true);
+  showOutput();
+
+  // Clear output
+  const respTab = document.getElementById('tab-response');
+  const traceTab = document.getElementById('tab-trace');
+  const traceBtn = document.getElementById('tab-trace-btn');
+
+  respTab.innerHTML = `<div class="loading-state"><span class="spin">◌</span> Calling LLM…</div>`;
+  respTab.style.display = 'flex';
+  traceTab.innerHTML = '';
+  traceTab.style.display = 'none';
+  traceBtn.style.display = 'none';
+
+  // Switch to response tab
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.tab-btn').classList.add('active');
+
+  const body = { prompt, model };
+  if (sc.agentType) body.agentType = sc.agentType;
+
+  try {
+    const res = await fetch(sc.endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+    if (sc.endpoint === '/demo/compare') {
+      renderCompare(respTab, data);
+    } else if (sc.showTrace) {
+      renderAgentResponse(respTab, traceTab, traceBtn, data);
+    } else {
+      renderChat(respTab, data);
+    }
+  } catch (e) {
+    respTab.innerHTML = `<div style="padding:16px;"><div class="error-block">Error: ${esc(e.message)}</div></div>`;
+  } finally {
+    setBusy(false);
+  }
+}
+
+function renderChat(container, data) {
+  const u = data.usage || {};
+  container.innerHTML = `
+    <div id="tab-response" style="display:flex;flex-direction:column;flex:1;overflow:hidden;padding:16px;gap:12px;">
+      <div class="response-card">
+        <div class="response-text">${esc(data.answer || data.content || '')}</div>
+        <div class="response-meta">
+          <div class="rmeta">Model <b>${esc(data.model || '')}</b></div>
+          <div class="rmeta">Tokens in <b>${u.prompt_tokens ?? u.input_tokens ?? '—'}</b></div>
+          <div class="rmeta">Tokens out <b>${u.completion_tokens ?? u.output_tokens ?? '—'}</b></div>
+          ${data.latencyMs ? `<div class="rmeta">Latency <b>${data.latencyMs}ms</b></div>` : ''}
+        </div>
+      </div>
+      ${data.traceId ? traceIdHtml(data.traceId) : ''}
+    </div>`;
+}
+
+function renderAgentResponse(respContainer, traceContainer, traceBtn, data) {
+  const u = data.usage || {};
+  // Response tab
+  respContainer.innerHTML = `
+    <div style="display:flex;flex-direction:column;flex:1;overflow:hidden;padding:16px;gap:12px;">
+      <div class="response-card">
+        <div class="response-text">${esc(data.answer || data.finalAnswer || '')}</div>
+        <div class="response-meta">
+          <div class="rmeta">Model <b>${esc(data.model || '')}</b></div>
+          <div class="rmeta">Rounds <b>${data.rounds ?? '—'}</b></div>
+          <div class="rmeta">Tool calls <b>${data.toolCallCount ?? '—'}</b></div>
+          ${data.latencyMs ? `<div class="rmeta">Latency <b>${data.latencyMs}ms</b></div>` : ''}
+        </div>
+      </div>
+      ${data.traceId ? traceIdHtml(data.traceId) : ''}
+    </div>`;
+
+  // Trace tab
+  if (data.steps && data.steps.length) {
+    traceBtn.style.display = 'inline-block';
+    renderAgentTrace(traceContainer, data);
+  }
+}
+
+function renderAgentTrace(container, data) {
+  const steps = data.steps || [];
+  const totalMs = data.latencyMs || 0;
+  const toolCalls = steps.filter(s => s.type === 'tool').length;
+  const llmCalls = steps.filter(s => s.type === 'llm').length;
+
+  let html = `
+    <div class="trace-stats">
+      <div class="tstat"><div class="tstat-val">${steps.length}</div><div class="tstat-lbl">Total steps</div></div>
+      <div class="tstat"><div class="tstat-val">${llmCalls}</div><div class="tstat-lbl">LLM calls</div></div>
+      <div class="tstat"><div class="tstat-val">${toolCalls}</div><div class="tstat-lbl">Tool calls</div></div>
+      <div class="tstat"><div class="tstat-val">${totalMs ? totalMs + 'ms' : '—'}</div><div class="tstat-lbl">Total latency</div></div>
+    </div>
+    <div class="steps-list">`;
+
+  steps.forEach((step, i) => {
+    const isLlm = step.type === 'llm';
+    const isTool = step.type === 'tool';
+    const isDone = step.type === 'final';
+    const numClass = isDone ? 'done' : isLlm ? 'llm' : 'tool';
+    const badge = isDone
+      ? `<span class="badge badge-done">FINAL</span>`
+      : isLlm ? `<span class="badge badge-llm">LLM</span>`
+               : `<span class="badge badge-tool">TOOL</span>`;
+    const ms = step.latencyMs ? `<span class="badge-ms">${step.latencyMs}ms</span>` : '';
+    const title = isDone ? 'Final Answer' : isLlm ? `LLM · ${esc(step.model || 'gpt-4o-mini')}` : `Tool: ${esc(step.tool || '')}`;
+    const sub = step.args ? JSON.stringify(step.args) : (step.content ? step.content.slice(0,80) + '…' : '');
+
+    let bodyContent = '';
+    if (isLlm) {
+      if (step.content) bodyContent += `<div class="step-section-lbl">Response</div><div class="step-code">${esc(step.content)}</div>`;
+      if (step.toolCalls) {
+        const tc = Array.isArray(step.toolCalls) ? step.toolCalls : [step.toolCalls];
+        bodyContent += `<div class="step-section-lbl">Tool calls requested</div><div class="step-code">${esc(JSON.stringify(tc, null, 2))}</div>`;
+      }
+    } else if (isTool) {
+      if (step.args) bodyContent += `<div class="step-section-lbl">Arguments</div><div class="step-code">${esc(JSON.stringify(step.args, null, 2))}</div>`;
+      if (step.result !== undefined) bodyContent += `<div class="step-section-lbl">Result</div><div class="step-code">${esc(JSON.stringify(step.result, null, 2))}</div>`;
+    } else if (isDone) {
+      if (step.content) bodyContent += `<div class="step-section-lbl">Final Answer</div><div class="step-code">${esc(step.content)}</div>`;
+    }
+
+    html += `
+      <div class="step-card" id="step-${i}">
+        <div class="step-header" onclick="toggleStep(${i})">
+          <div class="step-num ${numClass}">${i + 1}</div>
+          <div class="step-info">
+            <div class="step-title">${title}</div>
+            ${sub ? `<div class="step-sub">${esc(sub)}</div>` : ''}
+          </div>
+          <div class="step-badges">${badge}${ms}</div>
+          <span class="step-chevron">▶</span>
+        </div>
+        ${bodyContent ? `<div class="step-body"><div class="step-body-inner">${bodyContent}</div></div>` : ''}
+      </div>`;
+  });
+
+  html += `</div>`;
+  if (data.traceId) {
+    html += `<div style="flex-shrink:0;">${traceIdHtml(data.traceId)}</div>`;
+  }
+  container.innerHTML = html;
+}
+
+function renderCompare(container, data) {
+  const left = data.openai || {};
+  const right = data.anthropic || {};
+  const lu = left.usage || {};
+  const ru = right.usage || {};
+
+  container.innerHTML = `
+    <div style="display:flex;flex-direction:column;flex:1;overflow:hidden;padding:16px;gap:12px;">
+      <div class="compare-grid">
+        <div class="compare-card">
+          <div class="compare-header">
+            <div>
+              <div class="compare-model">${esc(left.model || 'OpenAI')}</div>
+              <div class="compare-provider">OpenAI</div>
+            </div>
+          </div>
+          <div class="compare-body">
+            ${left.error
+              ? `<div class="error-block">${esc(left.error)}</div>`
+              : `<div class="compare-text">${esc(left.answer || left.content || '')}</div>`}
+          </div>
+          <div class="compare-footer">
+            <div class="compare-stat">Tokens <b>${(lu.prompt_tokens||0) + (lu.completion_tokens||0)}</b></div>
+            <div class="compare-stat">Latency <b>${left.latencyMs || '—'}ms</b></div>
+          </div>
+        </div>
+        <div class="compare-card">
+          <div class="compare-header">
+            <div>
+              <div class="compare-model">${esc(right.model || 'Anthropic')}</div>
+              <div class="compare-provider">Anthropic</div>
+            </div>
+          </div>
+          <div class="compare-body">
+            ${right.error
+              ? `<div class="error-block">${esc(right.error)}</div>`
+              : `<div class="compare-text">${esc(right.answer || right.content || '')}</div>`}
+          </div>
+          <div class="compare-footer">
+            <div class="compare-stat">Tokens <b>${(ru.input_tokens||0) + (ru.output_tokens||0)}</b></div>
+            <div class="compare-stat">Latency <b>${right.latencyMs || '—'}ms</b></div>
+          </div>
+        </div>
+      </div>
+      ${data.traceId ? traceIdHtml(data.traceId) : ''}
+    </div>`;
+}
+
+function traceIdHtml(traceId) {
+  return `
+    <div class="trace-id-row">
+      <span class="trace-id-lbl">Trace ID</span>
+      <span class="trace-id-val">${esc(traceId)}</span>
+      <button class="copy-btn" onclick="copyTrace('${esc(traceId)}')">Copy</button>
+    </div>`;
+}
+
+function toggleStep(i) {
+  document.getElementById(`step-${i}`).classList.toggle('open');
+}
+
+function copyTrace(id) {
+  navigator.clipboard.writeText(id).catch(() => {});
+}
+
+// Set initial prompt
+document.getElementById('prompt-ta').value = PROMPTS['chat'];
+
+// Keyboard shortcut: Ctrl/Cmd+Enter to run
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') run();
+});
+</script>
+</body>
+</html>
