@@ -8,11 +8,12 @@ import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const TRACE_URL = process.env.TRACE_SERVICE_URL ?? "http://localhost:8085";
+const TRACE_URL = process.env.TRACE_SERVICE_URL ?? "https://api.syntropylabs.ai";
 const SUB_KEY   = process.env.EVALKIT_SUBSCRIPTION_KEY ?? "";
 const OPENAI_API_KEY    = process.env.OPENAI_API_KEY ?? "";
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY ?? "";
 
+// Single init — auto-instruments http, fetch, console, OpenAI, Anthropic, Axios, Mongoose
 evalkit.init({
   subscriptionKey: SUB_KEY,
   baseUrl: TRACE_URL,
@@ -24,9 +25,6 @@ evalkit.init({
 
 const openai    = new OpenAI({ apiKey: OPENAI_API_KEY });
 const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
-
-evalkit.patchOpenAIClient(openai);
-evalkit.patchAnthropicClient(anthropic);
 
 const TOOL_DEFS: OpenAI.Chat.ChatCompletionTool[] = [
   {
@@ -194,27 +192,25 @@ async function runOpenAIAgent(
   prompt: string,
   systemPrompt: string,
   model: string,
-  ctx: ReturnType<typeof evalkit.startTrace>["ctx"],
   tools: OpenAI.Chat.ChatCompletionTool[] = TOOL_DEFS,
 ) {
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
     { role: "system", content: systemPrompt },
     { role: "user",   content: prompt },
   ];
-  const steps: AgentStep[]          = [];
-  const totalTokens                 = { in: 0, out: 0 };
+  const steps: AgentStep[]       = [];
+  const totalTokens              = { in: 0, out: 0 };
   let answer = "";
   let usedModel = model;
 
   for (let round = 0; round < 6; round++) {
-    const response = await evalkit.withTrace(ctx, () =>
-      openai.chat.completions.create({
-        model,
-        messages,
-        tools:       tools.length > 0 ? tools : undefined,
-        tool_choice: tools.length > 0 ? "auto" : undefined,
-      })
-    );
+    // No withTrace needed — expressMiddleware already set the active context
+    const response = await openai.chat.completions.create({
+      model,
+      messages,
+      tools:       tools.length > 0 ? tools : undefined,
+      tool_choice: tools.length > 0 ? "auto" : undefined,
+    });
     usedModel          = response.model;
     const tokensIn     = response.usage?.prompt_tokens ?? 0;
     const tokensOut    = response.usage?.completion_tokens ?? 0;
@@ -237,16 +233,17 @@ async function runOpenAIAgent(
       const fname = tc.function.name;
       const fargs = JSON.parse(tc.function.arguments || "{}") as Record<string, unknown>;
       steps.push({ type: "tool_call", name: fname, args: fargs });
-      // Mark as tool_call span so the dashboard renders Input/Output inspector
+
+      // Optional: create a named span for the tool execution so it shows in the waterfall
       const { end } = evalkit.startSpan(`tool:${fname}`, {
         "evalkit.span_type": "tool_call",
         "gen_ai.tool.name": fname,
         "gen_ai.tool.call.id": tc.id,
         "gen_ai.tool.call.arguments": tc.function.arguments,
-      }, ctx);
+      });
       const result  = await executeTool(fname, fargs);
-      // Pass result as extra attribute — set on the span before it closes
       end("OK", { "gen_ai.tool.call.result": JSON.stringify(result) });
+
       steps.push({ type: "tool_result", name: fname, result });
       messages.push({ role: "tool", tool_call_id: tc.id, content: JSON.stringify(result) });
     }
@@ -258,7 +255,7 @@ async function runOpenAIAgent(
 export const app = express();
 app.use(express.json());
 
-// Auto-trace every incoming HTTP request — captures method, URL, headers, body
+// Auto-traces every incoming HTTP request
 app.use(evalkit.expressMiddleware());
 
 app.get("/", (_req, res) => {
@@ -280,28 +277,27 @@ app.post("/demo/chat", async (req, res) => {
   };
   if (!prompt) { res.status(400).json({ error: "prompt required" }); return; }
 
-  // expressMiddleware already started an http_call root span — use its context
-  const ctx = (req as any)._evalkitCtx;
-  const traceId = (req as any)._evalkitTraceId ?? "unknown";
   try {
     if (provider === "anthropic") {
-      const msg = await evalkit.withTrace(ctx, () =>
-        anthropic.messages.create({
-          model: model || "claude-haiku-4-5-20251001",
-          max_tokens: 1024,
-          messages: [{ role: "user", content: prompt }],
-        })
-      );
+      const msg = await anthropic.messages.create({
+        model: model || "claude-haiku-4-5-20251001",
+        max_tokens: 1024,
+        messages: [{ role: "user", content: prompt }],
+      });
       const answer = msg.content.filter((b) => b.type === "text").map((b) => (b as { text: string }).text).join("");
-      res.json({ answer, model: msg.model, traceId, tokens: { in: msg.usage.input_tokens, out: msg.usage.output_tokens } });
+      await evalkit.flush();
+      res.json({ answer, model: msg.model, tokens: { in: msg.usage.input_tokens, out: msg.usage.output_tokens } });
     } else {
-      const completion = await evalkit.withTrace(ctx, () =>
-        openai.chat.completions.create({ model, messages: [{ role: "user", content: prompt }] })
-      );
+      const completion = await openai.chat.completions.create({
+        model,
+        messages: [{ role: "user", content: prompt }],
+      });
       const answer = completion.choices[0]?.message.content ?? "";
-      res.json({ answer, model: completion.model, traceId, tokens: { in: completion.usage?.prompt_tokens, out: completion.usage?.completion_tokens } });
+      await evalkit.flush();
+      res.json({ answer, model: completion.model, tokens: { in: completion.usage?.prompt_tokens, out: completion.usage?.completion_tokens } });
     }
   } catch (err: unknown) {
+    await evalkit.flush();
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }
 });
@@ -332,13 +328,12 @@ app.post("/demo/agent", async (req, res) => {
   const allowedTools = scenarioTools[scenario] ?? scenarioTools.general;
   const tools        = TOOL_DEFS.filter((t) => allowedTools.includes(t.function.name));
 
-  const ctx = (req as any)._evalkitCtx;
-  const traceId = (req as any)._evalkitTraceId ?? "unknown";
-
   try {
-    const result = await runOpenAIAgent(prompt, system, model, ctx, tools);
-    res.json({ ...result, traceId, scenario });
+    const result = await runOpenAIAgent(prompt, system, model, tools);
+    await evalkit.flush();
+    res.json({ ...result, scenario });
   } catch (err: unknown) {
+    await evalkit.flush();
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }
 });
@@ -349,17 +344,15 @@ app.post("/demo/compare", async (req, res) => {
   };
   if (!prompt) { res.status(400).json({ error: "prompt required" }); return; }
 
-  const ctx = (req as any)._evalkitCtx;
-  const traceId = (req as any)._evalkitTraceId ?? "unknown";
   try {
     const jobs = models.map(async (model) => {
       const provider = model.startsWith("claude") ? "anthropic" : "openai";
       const start    = Date.now();
       try {
         if (provider === "anthropic") {
-          const msg = await evalkit.withTrace(ctx, () =>
-            anthropic.messages.create({ model, max_tokens: 512, messages: [{ role: "user", content: prompt }] })
-          );
+          const msg = await anthropic.messages.create({
+            model, max_tokens: 512, messages: [{ role: "user", content: prompt }],
+          });
           return {
             model: msg.model, provider,
             answer: msg.content.filter((b) => b.type === "text").map((b) => (b as { text: string }).text).join(""),
@@ -367,9 +360,9 @@ app.post("/demo/compare", async (req, res) => {
             latencyMs: Date.now() - start,
           };
         } else {
-          const completion = await evalkit.withTrace(ctx, () =>
-            openai.chat.completions.create({ model, messages: [{ role: "user", content: prompt }] })
-          );
+          const completion = await openai.chat.completions.create({
+            model, messages: [{ role: "user", content: prompt }],
+          });
           return {
             model: completion.model, provider,
             answer: completion.choices[0]?.message.content ?? "",
@@ -383,8 +376,10 @@ app.post("/demo/compare", async (req, res) => {
     });
 
     const results = await Promise.all(jobs);
-    res.json({ prompt, results, traceId });
+    await evalkit.flush();
+    res.json({ prompt, results });
   } catch (err: unknown) {
+    await evalkit.flush();
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }
 });
