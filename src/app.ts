@@ -9,7 +9,7 @@ import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const TRACE_URL = process.env.TRACE_SERVICE_URL ?? "https://api.syntropylabs.ai";
-const SUB_KEY   = process.env.EVALKIT_SUBSCRIPTION_KEY ?? "";
+const SUB_KEY   = process.env.EVALKIT_SUBSCRIPTION_KEY ;
 const OPENAI_API_KEY    = process.env.OPENAI_API_KEY ?? "";
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY ?? "";
 
@@ -234,15 +234,8 @@ async function runOpenAIAgent(
       const fargs = JSON.parse(tc.function.arguments || "{}") as Record<string, unknown>;
       steps.push({ type: "tool_call", name: fname, args: fargs });
 
-      // Optional: create a named span for the tool execution so it shows in the waterfall
-      const { end } = evalkit.startSpan(`tool:${fname}`, {
-        "evalkit.span_type": "tool_call",
-        "gen_ai.tool.name": fname,
-        "gen_ai.tool.call.id": tc.id,
-        "gen_ai.tool.call.arguments": tc.function.arguments,
-      });
-      const result  = await executeTool(fname, fargs);
-      end("OK", { "gen_ai.tool.call.result": JSON.stringify(result) });
+      // Tool spans are emitted automatically by the SDK's LLM instrumentation.
+      const result = await executeTool(fname, fargs);
 
       steps.push({ type: "tool_result", name: fname, result });
       messages.push({ role: "tool", tool_call_id: tc.id, content: JSON.stringify(result) });
