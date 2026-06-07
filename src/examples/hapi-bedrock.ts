@@ -4,14 +4,14 @@
  * Just call evalkit.init() — auto-instruments Bedrock, HTTP.
  * hapiPlugin() adds per-request trace spans.
  *
- * Install: npm install @hapi/hapi @aws-sdk/client-bedrock-runtime @evalkit/sdk
+ * Install: npm install @hapi/hapi @aws-sdk/client-bedrock-runtime syntropylabs-evalkit
  * Run:     EVALKIT_KEY=tk_live_... AWS_DEFAULT_REGION=us-east-1 npx tsx hapi-bedrock.ts
  * Test:    curl "http://localhost:3005/ask?q=What+is+Hapi.js"
  */
 
 import Hapi from "@hapi/hapi";
 import { BedrockRuntimeClient, ConverseCommand } from "@aws-sdk/client-bedrock-runtime";
-import evalkit from "@evalkit/sdk";
+import evalkit from "syntropylabs-evalkit";
 
 evalkit.init({
   subscriptionKey: process.env.EVALKIT_KEY ?? "demo-key",

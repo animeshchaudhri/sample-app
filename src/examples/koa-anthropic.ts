@@ -4,7 +4,7 @@
  * Just call evalkit.init() — auto-instruments Anthropic, HTTP.
  * koaMiddleware() adds per-request trace spans.
  *
- * Install: npm install koa @koa/router koa-bodyparser @anthropic-ai/sdk @evalkit/sdk
+ * Install: npm install koa @koa/router koa-bodyparser @anthropic-ai/sdk syntropylabs-evalkit
  * Run:     EVALKIT_KEY=tk_live_... ANTHROPIC_API_KEY=sk-ant-... npx tsx koa-anthropic.ts
  * Test:    curl -X POST http://localhost:3004/chat \
  *               -H 'Content-Type: application/json' \
@@ -15,7 +15,7 @@ import Koa from "koa";
 import Router from "@koa/router";
 import bodyParser from "koa-bodyparser";
 import Anthropic from "@anthropic-ai/sdk";
-import evalkit from "@evalkit/sdk";
+import evalkit from "syntropylabs-evalkit";
 
 evalkit.init({
   subscriptionKey: process.env.EVALKIT_KEY ?? "demo-key",

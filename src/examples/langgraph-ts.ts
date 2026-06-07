@@ -5,14 +5,14 @@
  * (via @langchain/openai), which is class-level patched automatically.
  * Node functions are optionally wrapped in named spans.
  *
- * Install: npm install @langchain/langgraph @langchain/openai openai @evalkit/sdk
+ * Install: npm install @langchain/langgraph @langchain/openai openai syntropylabs-evalkit
  * Run:     EVALKIT_KEY=tk_live_... OPENAI_API_KEY=sk-... npx tsx langgraph-ts.ts
  */
 
 import { StateGraph, END } from "@langchain/langgraph";
 import { ChatOpenAI } from "@langchain/openai";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
-import evalkit from "@evalkit/sdk";
+import evalkit from "syntropylabs-evalkit";
 
 evalkit.init({
   subscriptionKey: process.env.EVALKIT_KEY ?? "demo-key",

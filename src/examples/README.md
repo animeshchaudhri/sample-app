@@ -5,7 +5,7 @@ One-line integration examples for every supported framework and LLM provider.
 ## Prerequisites
 
 ```bash
-npm install @evalkit/sdk
+npm install syntropylabs-evalkit
 # plus whichever LLM SDK / framework you need (see each example)
 ```
 
@@ -40,7 +40,7 @@ AWS_SECRET_ACCESS_KEY=...
 Every example calls only:
 
 ```typescript
-import evalkit from "@evalkit/sdk";
+import evalkit from "syntropylabs-evalkit";
 
 evalkit.init({
   subscriptionKey: process.env.EVALKIT_KEY,

@@ -1,4 +1,4 @@
-import evalkit, { type SimContext, type AgentTurnResult } from "@evalkit/sdk";
+import evalkit, { type SimContext, type AgentTurnResult } from "syntropylabs-evalkit";
 import OpenAI from "openai";
 import { readFileSync } from "fs";
 

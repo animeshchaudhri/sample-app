@@ -4,14 +4,14 @@
  * Just call evalkit.init() — auto-instruments OpenAI, HTTP, DB.
  * expressMiddleware() adds per-request trace spans to every route.
  *
- * Install: npm install express openai @evalkit/sdk
+ * Install: npm install express openai syntropylabs-evalkit
  * Run:     EVALKIT_KEY=tk_live_... OPENAI_API_KEY=sk-... npx tsx express-openai.ts
  * Test:    curl "http://localhost:3001/ask?q=What+is+TypeScript"
  */
 
 import express from "express";
 import OpenAI from "openai";
-import evalkit from "@evalkit/sdk";
+import evalkit from "syntropylabs-evalkit";
 
 evalkit.init({
   subscriptionKey: process.env.EVALKIT_KEY ?? "demo-key",

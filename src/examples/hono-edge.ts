@@ -5,7 +5,7 @@
  * honoMiddleware() adds per-request trace spans.
  * Compatible with Cloudflare Workers, Vercel Edge, Deno Deploy.
  *
- * Install: npm install hono @hono/node-server openai @evalkit/sdk
+ * Install: npm install hono @hono/node-server openai syntropylabs-evalkit
  * Run:     EVALKIT_KEY=tk_live_... OPENAI_API_KEY=sk-... npx tsx hono-edge.ts
  * Test:    curl "http://localhost:3003/ask?q=Explain+edge+computing"
  */
@@ -13,7 +13,7 @@
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
 import OpenAI from "openai";
-import evalkit from "@evalkit/sdk";
+import evalkit from "syntropylabs-evalkit";
 
 evalkit.init({
   subscriptionKey: process.env.EVALKIT_KEY ?? "demo-key",

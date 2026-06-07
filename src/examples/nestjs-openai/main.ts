@@ -5,7 +5,7 @@
  * EvalKitInterceptor traces every controller method automatically.
  *
  * Install: npm install @nestjs/core @nestjs/common @nestjs/platform-express
- *                      openai reflect-metadata @evalkit/sdk
+ *                      openai reflect-metadata syntropylabs-evalkit
  * Run:     EVALKIT_KEY=tk_live_... OPENAI_API_KEY=sk-... npx ts-node -r reflect-metadata main.ts
  * Test:    curl "http://localhost:3006/ask?q=What+is+NestJS"
  */
@@ -15,7 +15,7 @@ import { NestFactory } from "@nestjs/core";
 import { Controller, Get, Module, Query } from "@nestjs/common";
 import { APP_INTERCEPTOR } from "@nestjs/core";
 import OpenAI from "openai";
-import evalkit, { EvalKitInterceptor } from "@evalkit/sdk";
+import evalkit, { EvalKitInterceptor } from "syntropylabs-evalkit";
 
 evalkit.init({
   subscriptionKey: process.env.EVALKIT_KEY ?? "demo-key",

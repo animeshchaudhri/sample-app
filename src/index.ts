@@ -8,5 +8,5 @@ app.listen(PORT, () => {
   console.log(`  Subscription key → ${process.env.EVALKIT_SUBSCRIPTION_KEY ?? "(not set)"}\n`);
 });
 
-process.on("SIGTERM", async () => { const { default: evalkit } = await import("@evalkit/sdk"); await evalkit.flush(); process.exit(0); });
-process.on("SIGINT",  async () => { const { default: evalkit } = await import("@evalkit/sdk"); await evalkit.flush(); process.exit(0); });
+process.on("SIGTERM", async () => { const { default: evalkit } = await import("syntropylabs-evalkit"); await evalkit.flush(); process.exit(0); });
+process.on("SIGINT",  async () => { const { default: evalkit } = await import("syntropylabs-evalkit"); await evalkit.flush(); process.exit(0); });

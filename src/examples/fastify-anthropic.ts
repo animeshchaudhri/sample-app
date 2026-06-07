@@ -4,7 +4,7 @@
  * Just call evalkit.init() — auto-instruments Anthropic, HTTP.
  * fastifyPlugin() adds per-request trace spans.
  *
- * Install: npm install fastify @anthropic-ai/sdk @evalkit/sdk
+ * Install: npm install fastify @anthropic-ai/sdk syntropylabs-evalkit
  * Run:     EVALKIT_KEY=tk_live_... ANTHROPIC_API_KEY=sk-ant-... npx tsx fastify-anthropic.ts
  * Test:    curl -X POST http://localhost:3002/chat \
  *               -H 'Content-Type: application/json' \
@@ -13,7 +13,7 @@
 
 import Fastify from "fastify";
 import Anthropic from "@anthropic-ai/sdk";
-import evalkit from "@evalkit/sdk";
+import evalkit from "syntropylabs-evalkit";
 
 evalkit.init({
   subscriptionKey: process.env.EVALKIT_KEY ?? "demo-key",

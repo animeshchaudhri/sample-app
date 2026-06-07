@@ -1,7 +1,7 @@
 import express from "express";
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
-import evalkit from "@evalkit/sdk";
+import evalkit from "syntropylabs-evalkit";
 import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
