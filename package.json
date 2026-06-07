@@ -13,7 +13,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
     "@aws-sdk/client-bedrock-runtime": "^3.1048.0",
-    "syntropylabs-evalkit": "^0.1.24",
+    "syntropylabs-evalkit": "^0.1.26",
     "@fastify/cookie": "^11.0.2",
     "@hapi/hapi": "^21.4.9",
     "@hono/node-server": "^2.0.2",

@@ -14,7 +14,7 @@ const OPENAI_API_KEY    = process.env.OPENAI_API_KEY ?? "";
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY ?? "";
 
 // Single init — auto-instruments http, fetch, console, OpenAI, Anthropic, Axios, Mongoose
-evalkit.init({
+const evalkitClient = evalkit.init({
   subscriptionKey: SUB_KEY,
   baseUrl: TRACE_URL,
   serviceName: "evalkit-showcase",
@@ -234,8 +234,24 @@ async function runOpenAIAgent(
       const fargs = JSON.parse(tc.function.arguments || "{}") as Record<string, unknown>;
       steps.push({ type: "tool_call", name: fname, args: fargs });
 
-      // Tool spans are emitted automatically by the SDK's LLM instrumentation.
-      const result = await executeTool(fname, fargs);
+      // The SDK records the model's tool *request* as a gen_ai.tool.call event on
+      // the LLM span. The tool's *execution* runs here in app code, so we wrap it
+      // in a tool_call span to capture real input, output, and latency.
+      const { end } = evalkit.startSpan(fname, {
+        "evalkit.span_type": "tool_call",
+        "tool.name": fname,
+        "gen_ai.tool.name": fname,
+        "tool.arguments": JSON.stringify(fargs),
+        "gen_ai.tool.call.id": tc.id,
+      });
+      let result: ToolResult;
+      try {
+        result = await executeTool(fname, fargs);
+        end("OK", { "tool.result": JSON.stringify(result) });
+      } catch (e) {
+        end("ERROR", { "error.message": e instanceof Error ? e.message : String(e) });
+        throw e;
+      }
 
       steps.push({ type: "tool_result", name: fname, result });
       messages.push({ role: "tool", tool_call_id: tc.id, content: JSON.stringify(result) });
@@ -322,7 +338,9 @@ app.post("/demo/agent", async (req, res) => {
   const tools        = TOOL_DEFS.filter((t) => allowedTools.includes(t.function.name));
 
   try {
-    const result = await runOpenAIAgent(prompt, system, model, tools);
+    // Function-level (APM) span around the whole agent loop. Tool executions and
+    // LLM calls inside nest under this "agent.run" function_call span.
+    const result = await evalkitClient.traceFunction("agent.run", runOpenAIAgent)(prompt, system, model, tools);
     await evalkit.flush();
     res.json({ ...result, scenario });
   } catch (err: unknown) {
