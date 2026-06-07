@@ -9,7 +9,7 @@ import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const TRACE_URL = process.env.TRACE_SERVICE_URL ?? "https://api.syntropylabs.ai";
-const SUB_KEY   = process.env.EVALKIT_SUBSCRIPTION_KEY ;
+const SUB_KEY   = process.env.EVALKIT_SUBSCRIPTION_KEY ?? "";
 const OPENAI_API_KEY    = process.env.OPENAI_API_KEY ?? "";
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY ?? "";
 
